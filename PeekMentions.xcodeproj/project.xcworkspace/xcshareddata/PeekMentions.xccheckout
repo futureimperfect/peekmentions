@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>2453664F-13BD-4504-867A-3EC56046EFB3</string>
+	<key>IDESourceControlProjectName</key>
+	<string>PeekMentions</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>BFA4ACC1-744D-4C98-A765-910CBAC54FF9</key>
+		<string>https://bitbucket.org/futureimperfect/peektweets.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>PeekMentions.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>BFA4ACC1-744D-4C98-A765-910CBAC54FF9</key>
+		<string>../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://bitbucket.org/futureimperfect/peektweets.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>BFA4ACC1-744D-4C98-A765-910CBAC54FF9</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>BFA4ACC1-744D-4C98-A765-910CBAC54FF9</string>
+			<key>IDESourceControlWCCName</key>
+			<string>PeekMentions</string>
+		</dict>
+	</array>
+</dict>
+</plist>
