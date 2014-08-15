@@ -8,9 +8,13 @@
 
 #import <UIKit/UIKit.h>
 
-@interface PKDetailViewController : UIViewController
+@interface PKDetailViewController : UIViewController {
+    IBOutlet UIImageView *profileImage;
+    IBOutlet UILabel *usernameLabel;
+    IBOutlet UILabel *tweetLabel;
+}
 
 @property (strong, nonatomic) id detailItem;
+//@property (weak, nonatomic) IBOutlet UILabel *detailDescriptionLabel;
 
-@property (weak, nonatomic) IBOutlet UILabel *detailDescriptionLabel;
 @end

@@ -7,7 +7,10 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <Accounts/Accounts.h>
 
 @interface PKMasterViewController : UITableViewController
+
+- (void)fetchPeekTweets;
 
 @end

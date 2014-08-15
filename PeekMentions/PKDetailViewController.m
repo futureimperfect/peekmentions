@@ -29,10 +29,31 @@
 - (void)configureView
 {
     // Update the user interface for the detail item.
-
     if (self.detailItem) {
-        self.detailDescriptionLabel.text = [self.detailItem description];
+        NSDictionary *tweet = self.detailItem;
+
+        NSString *text = [tweet objectForKey:@"text"];
+        NSString *username = [[tweet objectForKey:@"user"] objectForKey:@"name"];
+
+        tweetLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        tweetLabel.numberOfLines = 0;
+
+        usernameLabel.text = username;
+        tweetLabel.text = text;
+
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            NSString *imageURL = [[tweet objectForKey:@"user"] objectForKey:@"profile_image_url"];
+            NSData *data = [NSData dataWithContentsOfURL:[NSURL URLWithString:imageURL]];
+
+            dispatch_async(dispatch_get_main_queue(), ^{
+                profileImage.image = [UIImage imageWithData:data];
+            });
+        });
     }
+
+//    if (self.detailItem) {
+//        self.detailDescriptionLabel.text = [self.detailItem description];
+//    }
 }
 
 - (void)viewDidLoad
