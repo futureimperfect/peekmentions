@@ -5,14 +5,14 @@
       "idiom" : "iphone",
       "extent" : "full-screen",
       "minimum-system-version" : "7.0",
-      "filename" : "peek_mentions_launch_image.png",
+      "filename" : "peek_tweet_mentions_launch_image.png",
       "scale" : "2x"
     },
     {
       "extent" : "full-screen",
       "idiom" : "iphone",
       "subtype" : "retina4",
-      "filename" : "peek_mentions_launch_image_r4.png",
+      "filename" : "peek_tweet_mentions_launch_image_r4.png",
       "minimum-system-version" : "7.0",
       "orientation" : "portrait",
       "scale" : "2x"
