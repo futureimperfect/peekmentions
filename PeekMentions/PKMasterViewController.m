@@ -180,6 +180,16 @@
 
     cell.textLabel.text = text;
     cell.detailTextLabel.text = [NSString stringWithFormat:@"By %@", name];
+    cell.imageView.image = [UIImage imageNamed:@"default_profile_image.png"];
+
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSString *imageURL = [[tweet objectForKey:@"user"] objectForKey:@"profile_image_url"];
+        NSData *data = [NSData dataWithContentsOfURL:[NSURL URLWithString:imageURL]];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            cell.imageView.image = [UIImage imageWithData:data];
+        });
+    });
 
     return cell;
 }
