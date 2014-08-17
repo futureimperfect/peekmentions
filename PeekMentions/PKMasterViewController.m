@@ -31,7 +31,19 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+
+    // Set up pull-to-refresh
+    UIRefreshControl *refreshControl = [[UIRefreshControl alloc] init];
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"Pull to Refresh"];
+    [refreshControl addTarget:self action:@selector(fetchPeekTweets) forControlEvents:UIControlEventValueChanged];
+    self.refreshControl = refreshControl;
+
     [self fetchPeekTweets];
+}
+
+- (void)stopRefresh
+{
+    [self.refreshControl endRefreshing];
 }
 
 - (ACAccountStore *)accountStore
@@ -73,6 +85,8 @@
              });
          }
      }];
+
+    [self performSelector:@selector(stopRefresh) withObject:nil afterDelay:1.5];
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
