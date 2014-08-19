@@ -7,6 +7,7 @@
 //
 
 #import <Social/Social.h>
+#import <Accounts/Accounts.h>
 
 #import "PKMasterViewController.h"
 #import "PKDetailViewController.h"
@@ -66,7 +67,7 @@
                                             completion:^(BOOL granted, NSError *error) {
          if (granted) {
              NSURL *url = [NSURL URLWithString:kTwitterSearchURL];
-             NSDictionary *params = @{@"count": @100, @"q": @"%40Peek"};
+             NSDictionary *params = @{@"q": @"%40Peek", @"count": @"20"};
              SLRequest *slRequest = [SLRequest requestForServiceType:SLServiceTypeTwitter
                                                        requestMethod:SLRequestMethodGET
                                                                  URL:url
@@ -107,9 +108,7 @@
     NSError *jsonParsingError = nil;
     NSDictionary *jsonResults = [NSJSONSerialization JSONObjectWithData:self.buffer options:0 error:&jsonParsingError];
 
-    NSLog(@"jsonResults: %@", jsonResults);
     self.results = jsonResults[@"statuses"];
-    NSLog(@"statuses: %@", jsonResults[@"statuses"]);
 
     self.buffer = nil;
     [self.refreshControl endRefreshing];

@@ -7,3 +7,4 @@
 //
 
 extern NSString *const kTwitterSearchURL;
+extern NSString *const kTwitterRetweetURL;

@@ -8,7 +8,7 @@
 
 #import <UIKit/UIKit.h>
 
-@interface PKDetailViewController : UIViewController {
+@interface PKDetailViewController : UIViewController <UIAlertViewDelegate> {
     IBOutlet UIImageView *profileImage;
     IBOutlet UILabel *usernameLabel;
     IBOutlet UILabel *tweetLabel;
