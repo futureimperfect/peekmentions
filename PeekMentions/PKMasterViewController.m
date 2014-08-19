@@ -175,15 +175,15 @@
     }
 
     NSDictionary *tweet = [self.results objectAtIndex:indexPath.row];
-    NSString *text = [tweet objectForKey:@"text"];
-    NSString *name = [[tweet objectForKey:@"user"] objectForKey:@"name"];
+    NSString *text = tweet[@"text"];
+    NSString *name = tweet[@"user"][@"name"];
 
     cell.textLabel.text = text;
     cell.detailTextLabel.text = [NSString stringWithFormat:@"By %@", name];
     cell.imageView.image = [UIImage imageNamed:@"default_profile_image.png"];
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        NSString *imageURL = [[tweet objectForKey:@"user"] objectForKey:@"profile_image_url"];
+        NSString *imageURL = tweet[@"user"][@"profile_image_url"];
         NSData *data = [NSData dataWithContentsOfURL:[NSURL URLWithString:imageURL]];
 
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -192,6 +192,17 @@
     });
 
     return cell;
+}
+
+- (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    // Set up alternating row colors.
+    // Use yellow because Peek likes that. :)
+    if (indexPath.row % 2 == 0) {
+        cell.backgroundColor = [UIColor whiteColor];
+    } else {
+        cell.backgroundColor = [UIColor colorWithRed:0.99 green:0.97 blue:0.84 alpha:1.0f];
+    }
 }
 
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
