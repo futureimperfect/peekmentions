@@ -18,11 +18,21 @@
 @property (strong, nonatomic) NSURLConnection *connection;
 @property (strong, nonatomic) NSMutableData *buffer;
 @property (strong, nonatomic) NSMutableArray *results;
+@property (strong, nonatomic) NSString *minimumTweetID;
 @property (strong, nonatomic) ACAccountStore *accountStore;
 
 @end
 
 @implementation PKMasterViewController
+
+- (id)init
+{
+    self = [super init];
+    if (self) {
+        self.results = [[NSMutableArray alloc] init];
+    }
+    return self;
+}
 
 - (void)awakeFromNib
 {
@@ -56,6 +66,17 @@
     return _accountStore;
 }
 
+- (NSString *)getMinimumTweetIDIn:(NSDictionary *)jsonResults
+{
+    NSString *minID = nil;
+
+    if (jsonResults != nil) {
+        minID = [jsonResults[@"statuses"] lastObject][@"id"];
+    }
+
+    return minID;
+}
+
 - (void)fetchPeekTweets
 {
     // Set the accountType to Twitter
@@ -67,11 +88,18 @@
                                             completion:^(BOOL granted, NSError *error) {
          if (granted) {
              NSURL *url = [NSURL URLWithString:kTwitterSearchURL];
-             NSDictionary *params = @{@"q": @"%40Peek", @"count": @"20"};
+             NSMutableDictionary *mutableParams = [[NSMutableDictionary alloc] initWithDictionary:@{@"q": @"%40Peek", @"count": @"20"}];
+
+             if (self.minimumTweetID != nil) {
+                 NSLog(@"We have a minimum tweet ID. It is: %@.", self.minimumTweetID);
+                 [mutableParams setObject:self.minimumTweetID forKey:@"max_id"];
+                 NSLog(@"mutableParams are now: %@", mutableParams);
+             }
+
              SLRequest *slRequest = [SLRequest requestForServiceType:SLServiceTypeTwitter
                                                        requestMethod:SLRequestMethodGET
                                                                  URL:url
-                                                          parameters:params];
+                                                          parameters:mutableParams];
 
              NSArray *accounts = [self.accountStore accountsWithAccountType:accountType];
              slRequest.account = [accounts lastObject];
@@ -108,7 +136,18 @@
     NSError *jsonParsingError = nil;
     NSDictionary *jsonResults = [NSJSONSerialization JSONObjectWithData:self.buffer options:0 error:&jsonParsingError];
 
-    self.results = jsonResults[@"statuses"];
+//    self.results = jsonResults[@"statuses"];
+    if ([self.results count]) {
+        NSLog(@"Current self.results: %@", self.results);
+        NSLog(@"_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_");
+        NSLog(@"Adding this array to results: %@", jsonResults[@"statuses"]);
+        [self.results addObjectsFromArray:jsonResults[@"statuses"]];
+    } else {
+        self.results = [jsonResults[@"statuses"] mutableCopy];
+    }
+
+    self.minimumTweetID = [self getMinimumTweetIDIn:jsonResults];
+    NSLog(@"min ID in tweets is %@.", self.minimumTweetID);
 
     self.buffer = nil;
     [self.refreshControl endRefreshing];
@@ -177,8 +216,8 @@
     NSString *text = tweet[@"text"];
     NSString *name = tweet[@"user"][@"name"];
 
-    cell.textLabel.text = text;
-    cell.detailTextLabel.text = [NSString stringWithFormat:@"By %@", name];
+    if (text) cell.textLabel.text = text;
+    if (name) cell.detailTextLabel.text = [NSString stringWithFormat:@"By %@", name];
     cell.imageView.image = [UIImage imageNamed:@"default_profile_image.png"];
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -201,6 +240,19 @@
         cell.backgroundColor = [UIColor whiteColor];
     } else {
         cell.backgroundColor = [UIColor colorWithRed:0.99 green:0.97 blue:0.84 alpha:1.0f];
+    }
+}
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView_
+{
+    CGFloat actualPosition = scrollView_.contentOffset.y;
+    CGFloat contentHeight = scrollView_.contentSize.height - 500.0;
+    NSLog(@"actualPosition: %f, contentHeight: %f", actualPosition, contentHeight);
+
+    if (actualPosition >= 0 && contentHeight >= 0 && actualPosition >= contentHeight) {
+        [self fetchPeekTweets];
+        [self.tableView reloadData];
+        NSLog(@"I'm gonna update some stuff.");
     }
 }
 
