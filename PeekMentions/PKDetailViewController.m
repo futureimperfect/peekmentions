@@ -9,7 +9,9 @@
 #import "PKDetailViewController.h"
 
 @interface PKDetailViewController ()
+
 - (void)configureView;
+
 @end
 
 @implementation PKDetailViewController
@@ -41,6 +43,13 @@
         usernameLabel.text = username;
         tweetLabel.text = text;
 
+        // Add the retweet button
+        UIImage *retweetImage = [UIImage imageNamed:@"retweet_on.png"];
+        UIButton *retweetButton = [UIButton buttonWithType:UIButtonTypeCustom];
+        retweetButton.frame = CGRectMake(50.0, 50.0, 16.0, 16.0);
+        [retweetButton setBackgroundImage:retweetImage forState:UIControlStateNormal];
+        [self.view addSubview:retweetButton];
+
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             NSString *imageURL = [[tweet objectForKey:@"user"] objectForKey:@"profile_image_url"];
             NSData *data = [NSData dataWithContentsOfURL:[NSURL URLWithString:imageURL]];
@@ -50,23 +59,21 @@
             });
         });
     }
-
-//    if (self.detailItem) {
-//        self.detailDescriptionLabel.text = [self.detailItem description];
-//    }
 }
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-	// Do any additional setup after loading the view, typically from a nib.
     [self configureView];
 }
 
 - (void)didReceiveMemoryWarning
 {
     [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
 }
 
+- (IBAction)retweet:(id)sender
+{
+    NSLog(@"Retweetin' some tweets!");
+}
 @end
