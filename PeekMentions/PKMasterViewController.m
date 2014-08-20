@@ -8,17 +8,19 @@
 
 #import <Social/Social.h>
 #import <Accounts/Accounts.h>
+#import <limits.h>
 
 #import "PKMasterViewController.h"
 #import "PKDetailViewController.h"
 #import "PKConstants.h"
 
-@interface PKMasterViewController ()
+@interface PKMasterViewController () {
+    unsigned long long maxTweetID;
+}
 
 @property (strong, nonatomic) NSURLConnection *connection;
 @property (strong, nonatomic) NSMutableData *buffer;
 @property (strong, nonatomic) NSMutableArray *results;
-@property (strong, nonatomic) NSString *minimumTweetID;
 @property (strong, nonatomic) ACAccountStore *accountStore;
 
 @end
@@ -30,6 +32,7 @@
     self = [super init];
     if (self) {
         self.results = [[NSMutableArray alloc] init];
+        maxTweetID = 0;
     }
     return self;
 }
@@ -46,7 +49,7 @@
     // Set up pull-to-refresh
     UIRefreshControl *refreshControl = [[UIRefreshControl alloc] init];
     refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"Pull to Refresh"];
-    [refreshControl addTarget:self action:@selector(fetchPeekTweets) forControlEvents:UIControlEventValueChanged];
+    [refreshControl addTarget:self action:@selector(fetchNewArrayOfPeekTweets) forControlEvents:UIControlEventValueChanged];
     self.refreshControl = refreshControl;
 
     [self fetchPeekTweets];
@@ -55,6 +58,13 @@
 - (void)stopRefresh
 {
     [self.refreshControl endRefreshing];
+}
+
+- (void)fetchNewArrayOfPeekTweets
+{
+    maxTweetID = 0;
+    self.results = nil;
+    [self fetchPeekTweets];
 }
 
 - (ACAccountStore *)accountStore
@@ -66,15 +76,21 @@
     return _accountStore;
 }
 
-- (NSString *)getMinimumTweetIDIn:(NSDictionary *)jsonResults
+- (unsigned long long)getSmallestTweetIDIn:(NSDictionary *)jsonResults
 {
-    NSString *minID = nil;
+    // Assign smallest ID to unsigned long long max temporarily
+    unsigned long long smallestID = ULLONG_MAX;
 
-    if (jsonResults != nil) {
-        minID = [jsonResults[@"statuses"] lastObject][@"id"];
+    for (NSDictionary *dct in jsonResults[@"statuses"]) {
+        NSNumber *currentID = dct[@"id"];
+        NSLog(@"currentID: %@", currentID);
+        NSLog(@"currentID unsigned long long: %llu", [currentID unsignedLongLongValue]);
+        if ([currentID unsignedLongLongValue] < smallestID) {
+            smallestID = [currentID unsignedLongLongValue];
+        }
     }
 
-    return minID;
+    return smallestID;
 }
 
 - (void)fetchPeekTweets
@@ -90,9 +106,9 @@
              NSURL *url = [NSURL URLWithString:kTwitterSearchURL];
              NSMutableDictionary *mutableParams = [[NSMutableDictionary alloc] initWithDictionary:@{@"q": @"%40Peek", @"count": @"20"}];
 
-             if (self.minimumTweetID != nil) {
-                 NSLog(@"We have a minimum tweet ID. It is: %@.", self.minimumTweetID);
-                 [mutableParams setObject:self.minimumTweetID forKey:@"max_id"];
+             if (maxTweetID != 0) {
+                 NSLog(@"We have a minimum tweet ID. It is: %llu.", maxTweetID);
+                 [mutableParams setObject:[[NSNumber numberWithUnsignedLongLong:maxTweetID - 1] stringValue] forKey:@"max_id"];
                  NSLog(@"mutableParams are now: %@", mutableParams);
              }
 
@@ -104,6 +120,7 @@
              NSArray *accounts = [self.accountStore accountsWithAccountType:accountType];
              slRequest.account = [accounts lastObject];
              NSURLRequest *req = [slRequest preparedURLRequest];
+             NSLog(@"preparedURLRequest: %@", req);
              dispatch_async(dispatch_get_main_queue(), ^{
                  self.connection = [[NSURLConnection alloc] initWithRequest:req delegate:self];
                  [UIApplication sharedApplication].networkActivityIndicatorVisible = YES;
@@ -138,7 +155,6 @@
 
 //    self.results = jsonResults[@"statuses"];
     if ([self.results count]) {
-        NSLog(@"Current self.results: %@", self.results);
         NSLog(@"_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_");
         NSLog(@"Adding this array to results: %@", jsonResults[@"statuses"]);
         [self.results addObjectsFromArray:jsonResults[@"statuses"]];
@@ -146,8 +162,12 @@
         self.results = [jsonResults[@"statuses"] mutableCopy];
     }
 
-    self.minimumTweetID = [self getMinimumTweetIDIn:jsonResults];
-    NSLog(@"min ID in tweets is %@.", self.minimumTweetID);
+    if (jsonResults != nil) {
+    //    self.smallestTweetID = [self getMinimumTweetIDIn:jsonResults];
+        maxTweetID = [self getSmallestTweetIDIn:jsonResults];
+    //    NSLog(@"min ID in tweets is %@.", self.smallestTweetID);
+        NSLog(@"min ID in tweets is %llu.", maxTweetID);
+    }
 
     self.buffer = nil;
     [self.refreshControl endRefreshing];
