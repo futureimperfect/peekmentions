@@ -14,6 +14,8 @@
 #import "PKDetailViewController.h"
 #import "PKConstants.h"
 
+#import "SVPullToRefresh.h"
+
 @interface PKMasterViewController () {
     unsigned long long maxTweetID;
 }
@@ -52,12 +54,38 @@
     [refreshControl addTarget:self action:@selector(fetchNewArrayOfPeekTweets) forControlEvents:UIControlEventValueChanged];
     self.refreshControl = refreshControl;
 
+    // Set up infinite scrolling with SVPullToRefresh. In
+    // my testing this turned out to be more reliable than
+    // using the scrollViewDidScroll method and comparing
+    // the actual position to the content height.
+    __weak PKMasterViewController *weakSelf = self;
+    [self.tableView addInfiniteScrollingWithActionHandler:^{
+        [weakSelf fetchNewPeekTweets];
+    }];
+
+    // Fetch Peek Tweets
     [self fetchPeekTweets];
+
+    // Disable multiple selection when editing
+    self.tableView.allowsMultipleSelectionDuringEditing = NO;
 }
 
 - (void)stopRefresh
 {
     [self.refreshControl endRefreshing];
+}
+
+- (void)fetchNewPeekTweets
+{
+    __weak PKMasterViewController *weakSelf = self;
+
+    int64_t delayInSeconds = 2.0;
+    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+    dispatch_after(popTime, dispatch_get_main_queue(), ^(void) {
+        [weakSelf fetchPeekTweets];
+        [weakSelf.tableView reloadData];
+        [weakSelf.tableView.infiniteScrollingView stopAnimating];
+    });
 }
 
 - (void)fetchNewArrayOfPeekTweets
@@ -76,18 +104,20 @@
     return _accountStore;
 }
 
-- (unsigned long long)getSmallestTweetIDIn:(NSDictionary *)jsonResults
+- (unsigned long long)getSmallestTweetIDIn:(NSArray *)jsonResults
 {
     // Assign smallest ID to unsigned long long max temporarily
     unsigned long long smallestID = ULLONG_MAX;
 
-    for (NSDictionary *dct in jsonResults[@"statuses"]) {
+    for (NSDictionary *dct in jsonResults) {
         NSNumber *currentID = dct[@"id"];
-        NSLog(@"currentID: %@", currentID);
-        NSLog(@"currentID unsigned long long: %llu", [currentID unsignedLongLongValue]);
         if ([currentID unsignedLongLongValue] < smallestID) {
             smallestID = [currentID unsignedLongLongValue];
         }
+    }
+
+    if (smallestID == ULLONG_MAX) {
+        return 0;
     }
 
     return smallestID;
@@ -106,10 +136,8 @@
              NSURL *url = [NSURL URLWithString:kTwitterSearchURL];
              NSMutableDictionary *mutableParams = [[NSMutableDictionary alloc] initWithDictionary:@{@"q": @"%40Peek", @"count": @"20"}];
 
-             if (maxTweetID != 0) {
-                 NSLog(@"We have a minimum tweet ID. It is: %llu.", maxTweetID);
+             if (maxTweetID != 0 && maxTweetID != ULLONG_MAX) {
                  [mutableParams setObject:[[NSNumber numberWithUnsignedLongLong:maxTweetID - 1] stringValue] forKey:@"max_id"];
-                 NSLog(@"mutableParams are now: %@", mutableParams);
              }
 
              SLRequest *slRequest = [SLRequest requestForServiceType:SLServiceTypeTwitter
@@ -153,20 +181,36 @@
     NSError *jsonParsingError = nil;
     NSDictionary *jsonResults = [NSJSONSerialization JSONObjectWithData:self.buffer options:0 error:&jsonParsingError];
 
-//    self.results = jsonResults[@"statuses"];
     if ([self.results count]) {
-        NSLog(@"_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_");
-        NSLog(@"Adding this array to results: %@", jsonResults[@"statuses"]);
-        [self.results addObjectsFromArray:jsonResults[@"statuses"]];
+        NSMutableArray *resultsWithoutDupes = [NSMutableArray array];
+
+        for (NSDictionary *dct in jsonResults[@"statuses"]) {
+            BOOL matchFound = NO;
+            NSString *theID = [dct[@"id"] stringValue];
+
+            for (NSDictionary *otherDct in self.results) {
+                if ([[otherDct[@"id"] stringValue] isEqualToString:theID]) {
+                    matchFound = YES;
+                    break;
+                }
+            }
+            if (!matchFound) {
+                [resultsWithoutDupes addObject:dct];
+            }
+        }
+        [self.results addObjectsFromArray:resultsWithoutDupes];
+        if (resultsWithoutDupes != nil) {
+            maxTweetID = [self getSmallestTweetIDIn:resultsWithoutDupes];
+        } else {
+            maxTweetID = [self getSmallestTweetIDIn:self.results];
+        }
     } else {
         self.results = [jsonResults[@"statuses"] mutableCopy];
-    }
-
-    if (jsonResults != nil) {
-    //    self.smallestTweetID = [self getMinimumTweetIDIn:jsonResults];
-        maxTweetID = [self getSmallestTweetIDIn:jsonResults];
-    //    NSLog(@"min ID in tweets is %@.", self.smallestTweetID);
-        NSLog(@"min ID in tweets is %llu.", maxTweetID);
+        if (jsonResults != nil) {
+            maxTweetID = [self getSmallestTweetIDIn:jsonResults[@"statuses"]];
+        } else {
+            maxTweetID = [self getSmallestTweetIDIn:self.results];
+        }
     }
 
     self.buffer = nil;
@@ -210,6 +254,19 @@
 
 #pragma mark - Table View
 
+- (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return YES;
+}
+
+- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if (editingStyle == UITableViewCellEditingStyleDelete) {
+        [self.results removeObjectAtIndex:indexPath.row];
+        [self.tableView reloadData];
+    }
+}
+
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
     return 1;
@@ -218,7 +275,6 @@
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     NSInteger count = [self.results count];
-    NSLog(@"[self.results count]: %lu", (unsigned long)count);
     return count > 0 ? count : 1;
 }
 
@@ -260,19 +316,6 @@
         cell.backgroundColor = [UIColor whiteColor];
     } else {
         cell.backgroundColor = [UIColor colorWithRed:0.99 green:0.97 blue:0.84 alpha:1.0f];
-    }
-}
-
-- (void)scrollViewDidScroll:(UIScrollView *)scrollView_
-{
-    CGFloat actualPosition = scrollView_.contentOffset.y;
-    CGFloat contentHeight = scrollView_.contentSize.height - 500.0;
-    NSLog(@"actualPosition: %f, contentHeight: %f", actualPosition, contentHeight);
-
-    if (actualPosition >= 0 && contentHeight >= 0 && actualPosition >= contentHeight) {
-        [self fetchPeekTweets];
-        [self.tableView reloadData];
-        NSLog(@"I'm gonna update some stuff.");
     }
 }
 

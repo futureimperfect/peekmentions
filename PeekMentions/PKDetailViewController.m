@@ -61,13 +61,6 @@
         usernameLabel.text = username;
         tweetLabel.text = text;
 
-        // Add the retweet button
-//        UIImage *retweetImage = [UIImage imageNamed:@"retweet_on.png"];
-//        UIButton *retweetButton = [UIButton buttonWithType:UIButtonTypeCustom];
-//        retweetButton.frame = CGRectMake(50.0, 50.0, 16.0, 16.0);
-//        [retweetButton setBackgroundImage:retweetImage forState:UIControlStateNormal];
-//        [self.view addSubview:retweetButton];
-
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             NSString *imageURL = tweet[@"user"][@"profile_image_url"];
             NSData *data = [NSData dataWithContentsOfURL:[NSURL URLWithString:imageURL]];
@@ -126,7 +119,6 @@
     NSError *jsonParsingError = nil;
     NSDictionary *jsonResults = [NSJSONSerialization JSONObjectWithData:self.buffer options:0 error:&jsonParsingError];
 
-    NSLog(@"jsonResults: %@", jsonResults);
     self.results = jsonResults[@"statuses"];
 
     self.buffer = nil;
